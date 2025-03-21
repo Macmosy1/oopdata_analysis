@@ -1,0 +1,398 @@
+---
+title: "The Health Divide: Intersectional Impacts of High Out-of-Pocket Costs on Healthcare
+  Access and Outcomes in U.S. Vulnerable Populations"
+author: "Moses Alikali"
+date: "2025-03-20"
+output:
+  rmarkdown::html_document:
+    fig_caption: true
+    number_sections: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,          # Hide code by default
+  warning = FALSE,       # Suppress warnings
+  message = FALSE,       # Suppress messages
+  fig.path = "figures/", # Save figures to folder
+  fig.align = "center"
+)
+library(ggplot2)
+library(dplyr)
+library(MEPS)
+library(tidyverse)
+library(haven)
+library(devtools)
+library(gtsummary)
+library(gt)
+library(patchwork)
+library(survey)
+library(viridis)
+library(broom)
+library(lmtest)
+library(sandwich)
+library(pROC)
+library(pagedown)
+library(sjPlot)
+library(kableExtra)
+```
+# Abstract  
+The rising burden of out-of-pocket (OOP) healthcare costs in the United States disproportionately affects rural, minority, and low-income populations, exacerbating health inequities. This study examines how intersecting structural, socioeconomic, and geographic factors amplify disparities in healthcare access, financial strain, and health outcomes. Using nationally representative data from the 2022 Medical Expenditure Panel Survey (MEPS; N = 17,909) and National Health Interview Survey (NHIS; N = 29,522), we conducted survey-weighted logistic regression analyses to assess associations between OOP costs, delayed/foregone care, medical debt, and chronic disease management (diabetes and hypertension). Individuals with high OOP costs >$500 in annual healthcare costs have 4.07 times the odds of experiencing delayed care compared to those with lower costs (MEPS: OR = 4.07, 95% CI:1.39, 11.9, p = 0.011; NHIS: OR = 4.76, 95% CI: 4.04, 5.61, p<0.001 for unpaid medical bills). Rural Southern residents, Black individuals (26% of medical debt cohort), and low-income groups (20% delayed care) faced compounded disparities. Self-rated “poor” health correlated with medical debt (28%) and negative income (38%). Interaction analyses revealed that low OOP spending was protective among Asian populations (MEPS: OR = 0.06, 95% CI: 0.01, 0.43, p = 0.005), while Southern residents exhibited amplified delays.  Complementary findings showed that uninsured individuals had doubled odds of delayed care (MEPS: OR = 2.19, 95% CI:1.53, 3.13, p<0.001; NHIS: OR = 3.27, 95% CI = 1.93–5.54, p < 0.001) and that high income was protective (NHIS: OR = 0.54, 95% CI = 0.42–0.70, p<0.001). These findings underscore structural inequities magnify OOP cost burdens and urgently need intersectional and equity-driven policies, including Medicaid expansion, OOP cost caps, and culturally tailored interventions, to mitigate financial toxicity and improve healthcare access for vulnerable populations. 
+
+
+# Introduction  
+The United States healthcare system imposes significant financial burdens on patients through out-of-pocket (OOP) costs, including deductibles, copayments, and uncovered services. The financial burden OOP healthcare costs in the United States disproportionately impacts rural, minority, and low-income populations, exacerbating inequities in access and outcomes. Approximately 137.1 million adults report medical financial hardship, with younger, uninsured, and socioeconomically vulnerable groups facing heightened risks.1 High OOP costs compel individuals to delay or forgo care, worsening chronic conditions and increasing long-term healthcare expenditures.2-3 Rural residents, racial/ethnic minorities, and low-income households encounter compounded barriers, including provider shortages, underinsurance, and systemic racism, which amplify financial strain and restrict access to essential services.4-5
+Existing literature highlights how OOP costs drive healthcare avoidance, particularly among those with high-deductible plans or limited income.6-7 Structural challenges, such as geographic isolation and discriminatory policies, further marginalize rural and minority populations, perpetuating cycles of poor health and poverty.4,8 Theoretical frameworks like Andersen’s Behavioral Model and intersectionality theory elucidate how overlapping social determinants—rurality, race, and income—interact to shape disparities.9⁻10 However, research often examines these factors in isolation, neglecting their compounded effects.
+This study integrates Andersen’s Behavioral Model, which posits that healthcare access is shaped by predisposing, enabling, and need-based factors 9, with intersectionality theory 10 to analyze structural and socioeconomic drivers of inequities. Our study addresses this critical gap by investigating the intersectional impact of OOP costs on healthcare access and financial strain among multiply marginalized groups. It proposes equity-driven policies to mitigate disparities, emphasizing Medicaid expansion, OOP caps, and culturally tailored interventions.
+Research Objectives:
+1. Assess the impact of high OOP cost impacts on delayed care, health outcomes, and financial strain;
+2. Examine intersectional disparities across rurality, race/ethnicity, and income to exacerbate disparities. 
+3. Propose equitable policy solutions to reduce OOP burdens.
+
+# Methods
+Study Design and Data Sources
+This study employs a cross-sectional design utilizing data from the 2022 Medical Expenditure Panel Survey (MEPS) and National Health Interview Survey (NHIS), which provide complementary perspectives on healthcare expenditures, access barriers, and health outcomes among U.S. residents. MEPS, sponsored by the Agency for Healthcare Research and Quality (AHRQ), collects detailed information on healthcare utilization, expenditures, insurance coverage, and financial burden at the individual and household levels through overlapping panel surveys that track participants over two years. NHIS, conducted by the National Center for Health Statistics (NCHS), offers national estimates of self-reported health status, healthcare access, insurance coverage, and socioeconomic characteristics. Both datasets employ stratified, multistage probability sampling to ensure nationally representative estimates. To enhance validity, appropriate survey weights, strata, and clustering variables were incorporated in all analyses to account for the complex survey design.
+
+## Variables
+## Independent Variables:
+Out-of-pocket (OOP) healthcare costs were categorized into four groups based on total annual spending: no spending ($0), low ($1–$100), moderate ($101–$500), and high (>$500) as measured in MEPS. In NHIS, OOP burden was assessed using self-reported unpaid medical bills (binary: Yes/No). Demographic factors included rurality (urban vs. rural classification based on Metropolitan Statistical Area definitions), race/ethnicity (Non-Hispanic White, Non-Hispanic Black, Hispanic, Asian, and Other/Multiracial), income level (stratified by federal poverty level: negative income/debt, near poor [≤125% FPL], low [126–199% FPL], middle [200–399% FPL], and high [≥400% FPL]), and insurance status (uninsured, public [Medicaid/Medicare], private).
+
+## Dependent Variables:
+Healthcare access was measured by whether participants reported delayed or forgone medical care due to cost. Health outcomes included self-reported chronic disease management for conditions such as diabetes and hypertension, as well as self-rated health categorized as excellent, very good, good, fair, or poor. Financial strain was assessed based on the presence of medical debt and whether individuals reported late utility bill payments due to medical expenses.
+
+
+## Load Dataset 1  
+```{r include=FALSE}
+source("nhis_data_processing.R")
+```
+
+## Load libraries, process MEPS data, define variables, and create survey design
+
+```{r include=FALSE}
+source("meps_data_processing.R")
+```
+
+# Survey Design for Each Dataset
+## 3.1 Define Survey Design for MEPS
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+demographic_table <- meps_df4 %>%
+  select(gender, age_categories, region, poverty_category, education_level, race_ethnicity) %>%
+  tbl_summary(
+    statistic = list(all_categorical() ~ "{n} ({p}%)"),  
+    missing = "no",
+    label = list(
+      gender = "Gender",
+      region = "Geographic Region",
+      poverty_category = "Income Level",
+      education_level = "Education Level",
+      race_ethnicity = "Race/Ethnicity",
+      age_categories = "Age Group"
+    )
+  ) %>%
+  modify_header(label = "**Demographic Characteristics**") %>%
+  modify_caption("**MEPS Data Summary of Study Population Characteristics**") %>%
+  bold_labels() %>%
+  as_gt()  # Convert to GT table for publication
+
+demographic_table
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Creating demographic characteristic for the respondents
+demographic_table <- final_df %>%
+  select(sex, urban_rural, usa_region, income_category, education_categories, race_category, age_category) %>%
+  tbl_summary(
+    statistic = list(all_categorical() ~ "{n} ({p}%)"),  
+    missing = "no",
+    label = list(
+      urban_rural = "Residence Type",
+      usa_region = "Geographic Region",
+      income_category = "Income Level",
+      education_categories = "Education Level",
+      race_category = "Race/Ethnicity",
+      age_category = "Age Group"
+    )
+  ) %>%
+  modify_header(label = "**Demographic Characteristics**") %>%
+  modify_caption("**NHIS Data Summary of Study Population Characteristics**") %>%
+  bold_labels() %>%
+  as_gt()  # Convert to GT table for publication
+
+demographic_table
+```
+
+## 3.2 Define Survey Design for NHIS
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Creating heatmap for the health care outcomes by USA region)
+# Creating Hypertension heatmap
+heatmap_data <- meps_df4 %>%
+  count(region, hypertension_diagnosis_cat) %>%
+  mutate(hypertension_diagnosis_cat = as.factor(hypertension_diagnosis_cat))
+
+bp_heatmap <- ggplot(heatmap_data %>% na.omit(), aes(x = hypertension_diagnosis_cat, y = region, fill = n)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(x = "Diagnosed Hypertension",
+       y = "USA Region",
+       fill = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_blank(),   # Remove individual titles
+        axis.text = element_text(size = 12))
+
+bp_heatmap
+# Creating Diabetes heatmap
+diabetes_heatmap_data <- meps_df4 %>%
+  drop_na(diabetes_diagnosis ) %>%
+  count(region, diabetes_diagnosis , name = "n") 
+
+diabetes_heatmap <- ggplot(diabetes_heatmap_data, aes(x = diabetes_diagnosis , y = region, fill = n)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(x = "Diagnosed Diabetes",
+       y = "USA Region",
+       fill = "Count") +
+  theme_minimal() +
+  theme(plot.title = element_blank(),   # Remove individual titles
+        axis.text = element_text(size = 12))
+
+diabetes_heatmap
+# Combine the plots with a single title
+
+final_plot <- (bp_heatmap + diabetes_heatmap) + 
+  plot_annotation(title = "MEPS Data Heatmap of Diagnosed BP and Diabetes by USA Region") & 
+  theme(plot.title = element_text(hjust = 0.5, vjust = 2, size = 12, face = "bold"))
+
+final_plot
+```
+
+# 4. Out-of-Pocket Spending Analysis
+## 4.1 Visualization - MEPS
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Summarize poor health and delayed care prevalence (with survey weights)
+delay_prevalence <- final_df |>
+  mutate(
+    poor_health = ifelse(general_health_status == "Poor", 1, 0),
+    delay_care = delay_care_binary
+  ) |>
+  group_by(usa_region) |>
+  summarise(
+    poor_health = weighted.mean(poor_health, wt = wtfa_a, na.rm = TRUE),
+    delay_care = weighted.mean(delay_care, wt = wtfa_a, na.rm = TRUE)
+  ) |>
+  ungroup()
+
+# Get U.S. state map data and merge with regions
+states_map1 <- map_data("state") |>
+  left_join(state_region, by = c("region" = "state")) |>
+  left_join(delay_prevalence, by = c("region.y" = "usa_region"))
+
+# Plotting map of prevelence of Poor Health by USA region
+poor_health_map <- ggplot(states_map1, aes(x = long, y = lat, group = group, fill = poor_health)) +
+  geom_polygon(color = "white", linewidth = 0.1) +
+  scale_fill_viridis(
+    name = "Prevalence",
+    labels = scales::percent,
+    option = "C"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, vjust = 2, size = 13, face = "bold"))
+
+# Plotting map of prevelence of Delay care by USA region
+delay_care_map <- ggplot(states_map1, aes(x = long, y = lat, group = group, fill = delay_care)) +
+  geom_polygon(color = "white", linewidth = 0.1) +
+  scale_fill_viridis(
+    name = "Prevalence",
+    labels = scales::percent,
+    option = "D"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, vjust = 2, size = 13, face = "bold"))
+
+# Combine the plots with a single title
+
+final_plot <- (poor_health_map + delay_care_map) + 
+  plot_annotation(title = "NHIS Data Map of Prevalence of Poor Health and Delayed care by USA Region") & 
+  theme(plot.title = element_text(hjust = 0.5, vjust = 2, size = 12, face = "bold"))
+
+final_plot
+```
+
+6. Logistic Regression Models
+6.1 MEPS: Predicting Delayed Care Due to OOP Costs
+```{r}
+final_mode11 <- svyglm(delayed_care_binary ~ oop_category*(race_ethnicity + region) + 
+                         poverty_category + insurance_coverage + self_rated_health + 
+                         medical_debt_binary + late_utilities_binary,
+                       design = meps_design, family = quasibinomial())
+```
+
+# 7. Logistic Model: Outputs
+## 7.1 MEPS Logistic Model Table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Creating publication-ready tables filter p-values<0.05 and summarizing regression model results
+
+tbl_delay_model4 <- final_mode11 |> 
+  tbl_regression(
+    exponentiate = TRUE,
+    intercept = TRUE,
+    label = list(
+      'oop_category:race_ethnicity' = 'Out-of-Pocket by Race/Ethnicity',
+      'oop_category:region' = 'Out-of-Pocket by US Region',
+      'poverty_category' = 'Poverty Categories',
+      'insurance_coverage' = 'Insurance Coverage Status',
+      'self_rated_health' = 'Self Rated Health Status',
+      'medical_debt_binary' = 'Medical Debt'
+    )
+  ) |>
+  modify_table_body(
+    ~ dplyr::filter(.x, is.na(p.value) | p.value < 0.05)
+  )
+
+# Converting the tbl_merging to gt table object
+gt_table2 <- as_gt(tbl_delay_model4)
+gt_table2
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Filtering the variables to display only the significant ones on Model Plot for MEPS Data
+
+model_summary <- tidy(final_mode11, conf.int = TRUE)
+model_summary1 <- model_summary %>% filter(p.value < 0.05)
+
+model_summary2 <- model_summary1 %>%
+  mutate(
+    estimate = exp(estimate),      # Overwrite estimate with odds ratio
+    conf.low = exp(conf.low),      # Overwrite conf.low
+    conf.high = exp(conf.high)     # Overwrite conf.high
+  )
+
+svy_delay_model_results <- model_summary2 %>%
+  mutate(term = str_replace_all(term, "_", " "),   # Replace _ with space
+         term = str_replace(term, "(\\w+) (\\w+)$", "\\1 [\\2]"), # Format category in brackets
+         term = str_to_title(term))  # Capitalize first letter
+
+ggplot(svy_delay_model_results, aes(y = term, x = estimate)) +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high), color = "blue") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "MEPS Data Multiple Regression Model for Delayed Care",
+    x = "Estimate (Odds Ratio)", 
+    y = "Predictors"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.3, size = 11, face = "bold", margin = margin(b = 20)),
+    axis.title.x = element_text(size = 12, margin = margin(t = 15)),  
+    axis.title.y = element_text(size = 12, margin = margin(t = 15)),
+    panel.grid.major.y = element_line(color = "gray90", linetype = "dotted")
+  )
+
+```
+# 7. Model Performance: ROC & AUC
+## 7.1 MEPS ROC Curve
+```{r}
+# Calculate AUC
+# Extract predictions and response directly from the model
+predictions2 <- fitted(final_mode11)  # Fitted probabilities
+response2 <- model.frame(final_mode11)$delayed_care_binary  # Actual outcomes
+
+# Calculate AUC without modifying the survey design
+roc_obj2 <- pROC::roc(response2, predictions2)
+auc_score2 <- pROC::auc(roc_obj2)
+
+plot(roc_obj2, main = "MEPS Data ROC Curve (0.7363)", col = "blue")
+```
+
+6.2 NHIS: Predicting Delayed Care Due to OOP Costs
+```{r}
+
+final_mode12 <- svyglm(
+  delay_care_binary ~ insurance_coverage*(race_category + urban_rural) + 
+    income_category + general_health_status + age_category + 
+    diagnosed_bp + diagnosed_diabetes +
+    not_able_to_pay_bill_binary + took_less_medicine_categorical,
+  design = nhissvy,
+  family = binomial()
+)
+```
+
+# 7. Logistic Model: Outputs
+## 7.1 NHIS Logistic Model Table
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Creating publication-ready tables filter p-values<0.05 and summarizing regression model results
+
+tbl_delay_model4 <- final_mode12 |> 
+  tbl_regression(
+    exponentiate = TRUE,
+    intercept = TRUE,
+    label = list(
+      'insurance_coverage:race_category' = 'Insurance Coverage by Race/Ethnicity',
+      'race_category:urban_rural' = 'Insurance Coverage by Urban/Rural',
+      'income_category' = 'Income Categories',
+      'general_health_status' = 'General Health Status',
+      'age_category' = 'Age Categories',
+      'diagnosed_bp' = 'Diagnosed High BP',
+      'diagnosed_diabetes' = 'Diagnosed Diabetes',
+      'not_able_to_pay_bill_binary' = 'Not able to pay bills',
+      'took_less_medicine_categorical' = 'Took less medicine due to cost'
+    )
+  ) |>
+  modify_table_body(
+    ~ dplyr::filter(.x, is.na(p.value) | p.value < 0.05)
+  )
+
+gt_table2 <- as_gt(tbl_delay_model4)
+gt_table2
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Filtering the variables to display only the significant ones on Model Plot for MEPS Data
+model_summary2 <- tidy(final_mode12, conf.int = TRUE)
+model_summary3 <- model_summary2 %>% filter(p.value < 0.05)
+
+model_summary4 <- model_summary3 %>%
+  mutate(
+    estimate = exp(estimate),      # Overwrite estimate with odds ratio
+    conf.low = exp(conf.low),      # Overwrite conf.low
+    conf.high = exp(conf.high)     # Overwrite conf.high
+  )
+
+svy_delay_model_results2 <- model_summary4 %>%
+  mutate(term = str_replace_all(term, "_", " "),   # Replace _ with space
+         term = str_replace(term, "(\\w+) (\\w+)$", "\\1 [\\2]"), # Format category in brackets
+         term = str_to_title(term))  # Capitalize first letter
+
+ggplot(svy_delay_model_results2, aes(y = term, x = estimate)) +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high), color = "blue") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "NHIS Data Multiple Regression Model for Delayed Care",
+    x = "Estimate (Odds Ratio)", 
+    y = "Predictors"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.3, size = 11, face = "bold", margin = margin(b = 20)),
+    axis.title.x = element_text(size = 12, margin = margin(t = 15)),  
+    axis.title.y = element_text(size = 12, margin = margin(t = 15)),
+    panel.grid.major.y = element_line(color = "gray90", linetype = "dotted")
+  )
+
+```
+
+# 7. Model Performance: ROC & AUC
+## 7.1 NHIS ROC Curve
+```{r}
+# Calculate AUC
+# Extract predictions and response directly from the model
+predictions3 <- fitted(final_mode12)  # Fitted probabilities
+response3 <- model.frame(final_mode12)$delay_care_binary  # Actual outcomes
+
+# Calculate AUC without modifying the survey design
+roc_obj3 <- pROC::roc(response3, predictions3)
+auc_score3 <- pROC::auc(roc_obj3)
+
+plot(roc_obj3, main = "NHIS Data ROC Curve (0.818)", col = "blue")
+```
+
